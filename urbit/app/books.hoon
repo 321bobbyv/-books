@@ -1,6 +1,6 @@
 ::  /app/books
 ::
-/-  *books
+/-  *books, hark
 /+  default-agent, dbug
 
 |%
@@ -12,12 +12,14 @@
 ::  - zapper-token: zapper.fi uid + password, defaulting to public
 ::  - transactions: a mop of zapper timestamps to transaction data
 ::  - tags: tags you've used for wallets, transactions
-::  -old zapper api 9cf73788-8e8e-4bab-bff9-3ee126f2eccd
+::  - wallet-states: your wallet account balances
 ::  - held-wallets: your wallets - a map of addresses to metadatas
 ::  - lilblackbook: your friends - a map of addresses to metadatas
-::
+::  - eth-transactions - eth transactions from etherscan
+::  - nft-transactions - nft transactions from etherscan
 ::  - transactions: your transactions, stored, as a mop
-::  - elucidations: your notes - a map of trxhashes to annotations
+::  - elucidations: your notes - a map of trxhashes to annotations.
+::
 ::
 +$  state-zero
   $:  zapper-token=[uid=@t pw=@t]
@@ -25,9 +27,12 @@
       tags=(set @tas)
     ::
       held-wallets=(map @ux [nick=@t tags=(set @tas)])
+      wallet-states=(map walletaddress=@t balance=@ud)
       lilblackbook=(map @ux wallet)
     ::
       transactions=((mop ,[p=@da q=@ux] transaction) gth-hex)
+      eth-transactions=(map timestamp=@t [hash=@t from=@t to=@t value=@t gas=@t gasused=@t])
+      nft-transactions=(map blocknumber=@t [timestamp=@t hash=@t from=@t to=@t tokenid=@t tokenname=@t tokensymbol=@t gas=@t])
       elucidations=(map @ux annotation)
   ==
 ::
@@ -38,6 +43,19 @@
 ++  gth-hex
   |=  [a=[p=@da q=@ux] b=[p=@da q=@ux]]
   ?:(=(p.a p.b) (gth q.a q.b) (gth p.a p.b))
+
+++  gth-num
+  |=  [a=[p=@ud q=@ux] b=[p=@ud q=@ux]]
+  ?:(=(p.a p.b) (gth q.a q.b) (gth p.a p.b))
+
+++  hextocord
+|=  x=@ux
+(crip ['0' 'x' ((x-co:co (met 3 x)) x)])
+
+++  cordtohex
+|=  c=@t
+`@ux`(rash c ;~(pfix (jest '0x') hex))
+::
 --
 ::
 %-  agent:dbug
@@ -47,6 +65,7 @@
 ::
 ^-  agent:gall
 ::
+::
 =<
   |_  =bowl:gall
   +*  this  .
@@ -54,6 +73,7 @@
       is    ~(. +> bowl)
   ++  on-init
     ^-  (quip card _this)
+    =.  etherscankey  'GCBRCSK9Q1AFMW6QUT35223FI29YGQRMS2'
     =.  zapper-token
       ['afbb9d40-3fbb-44cc-a470-c704a5364981' '']
     =+  new=(add now.bowl ~m30)
@@ -96,6 +116,7 @@
           %set-tags             (tag-man:gilt:is +.vaz)
           %set-nick             (nic-nam:gilt:is +.vaz)
           %set-patp             (mah-guy:gilt:is +.vaz)
+          %re-fresh             up-date:gilt:is
         ==
       [cards this]
     ==
@@ -105,25 +126,32 @@
     ?+    pat  (on-watch:def pat)
         [%website ~]
       :_  this
-      :~  (zapper-fi:uber:is /full)
+      :~  ::(zapper-fi:uber:is /full)
+          (get-nft:uber)
+          (get-balance:uber)
+          (get-trans:uber)
           note-send:uber:is
           [%give %fact ~ json+!>(rolo-send:uber:is)]
       ==
     ==
   ++  on-arvo
     |=  [=wire sign=sign-arvo]
-    ?+    wire  (on-arvo:def wire sign)
+    ?+  wire  (on-arvo:def wire sign)
         [%books %timer ~]
       =+  new=(add now.bowl ~m30)
-      =;  always=(list card)
-        [[(zapper-fi:uber:is /when) always] this]
-      [%pass /books/timer [%arvo %b [%wait new]]]~
+      :_  this
+      :~  (get-trans:uber)
+          ::(zapper-fi:uber)
+          (get-nft:uber)
+          (get-balance:uber)
+        [%pass /books/timer [%arvo %b [%wait new]]]   
+      ==
     ::
         [%books %do %nix ~]
       ?>  ?=([%khan %arow *] sign)
       ?.  ?=(%& -.p.+.sign)  ((slog +.p.p.+.sign) `this)
       ?>  ?=(%noun -.p.p.+.sign)
-      =/  upd  ::=[p=((mop ,[p=@da q=@ux] transaction) gth-hex) q=(list [[@da @ux] transaction])]
+      =/  upd
         !<  $:  p=((mop ,[p=@da q=@ux] transaction) gth-hex)
                 q=(list [[@da @ux] transaction])
             ==
@@ -143,7 +171,92 @@
       =/  jon  !<(json +.p.p.+.sign)
       [[%give %fact ~[/website] json+!>(jon)]~ this]
     ::
-        [%books %do %zap *]
+      [%books %do %get-balance ~]
+      ?>  ?=([%khan %arow *] sign)
+      ?.  ?=(%& -.p.+.sign)  ((slog +.p.p.+.sign) `this)
+      ?>  ?=(%noun -.p.p.+.sign)
+      =/  bal  
+        !<  (map walletaddress=@t balance=@ud)  +.p.p.+.sign
+      :_  this(wallet-states bal)
+      =,  enjs:format
+      =-  [%give %fact ~[/website] json+!>(`json`-)]~
+        %-  pairs:enjs:format
+        :~  head+s+'update-wallet-balance'
+            tran+(enjsonbalance:en-json:is bal)
+        ==
+      ::
+         [%books %do %del-balance ~]
+      ?>  ?=([%khan %arow *] sign)
+      ?.  ?=(%& -.p.+.sign)  ((slog +.p.p.+.sign) `this)
+      ?>  ?=(%noun -.p.p.+.sign)
+      =/  bal  
+        !<  (map walletaddres=@t balance=@ud)  +.p.p.+.sign
+      :_  this(wallet-states bal)
+      =,  enjs:format
+      =-  [%give %fact ~[/website] json+!>(`json`-)]~
+        %-  pairs:enjs:format
+        :~  head+s+'update-wallet-balance'
+            tran+(enjsonbalance:en-json:is bal)
+        ==
+    :: do subscription update
+     [%books %do %get-trans ~]
+      ?>  ?=([%khan %arow *] sign)
+      ?.  ?=(%& -.p.+.sign)  ((slog +.p.p.+.sign) `this)
+      ?>  ?=(%noun -.p.p.+.sign)
+      =/  trans-thread  
+        !<  (map timestamp=@t [hash=@t from=@t to=@t value=@t gas=@t gasused=@t])  +.p.p.+.sign
+      :_  this(eth-transactions (~(uni by eth-transactions) trans-thread))
+      =,  enjs:format
+      =-  [%give %fact ~[/website] json+!>(`json`-)]~
+        %-  pairs:enjs:format
+        :~  head+s+'update-ethtrans'
+            tran+(enjsontrans:en-json trans-thread)
+        ==
+      ::
+    [%books %do %del-trans ~]
+      ?>  ?=([%khan %arow *] sign)
+      ?.  ?=(%& -.p.+.sign)  ((slog +.p.p.+.sign) `this)
+      ?>  ?=(%noun -.p.p.+.sign)
+      =/  trans-thread  
+        !<  (map timestamp=@t [hash=@t from=@t to=@t value=@t gas=@t gasused=@t])  +.p.p.+.sign
+      :_  this(eth-transactions (~(uni by eth-transactions) trans-thread))
+      =,  enjs:format
+      =-  [%give %fact ~[/website] json+!>(`json`-)]~
+        %-  pairs:enjs:format
+        :~  head+s+'update-ethtrans'
+            tran+(enjsontrans:en-json:is trans-thread)
+        ==
+      ::
+       [%books %do %get-nft ~]
+      ?>  ?=([%khan %arow *] sign)
+      ?.  ?=(%& -.p.+.sign)  ((slog +.p.p.+.sign) `this)
+      ?>  ?=(%noun -.p.p.+.sign)
+      =/  nft-thread
+        !<  (map blocknumber=@t [timestamp=@t hash=@t from=@t to=@t tokenid=@t tokenname=@t tokensymbol=@t gas=@t])  +.p.p.+.sign
+      :_  this(nft-transactions (~(uni by nft-transactions) nft-thread))
+      =,  enjs:format
+      =-  [%give %fact ~[/website] json+!>(`json`-)]~
+        %-  pairs:enjs:format
+        :~  head+s+'update-nfts'
+            tran+(enjsonnft:en-json:is nft-thread)
+        ==
+      ::
+      [%books %do %del-nft ~]
+      ?>  ?=([%khan %arow *] sign)
+      ?.  ?=(%& -.p.+.sign)  ((slog +.p.p.+.sign) `this)
+      ?>  ?=(%noun -.p.p.+.sign)
+      =/  nft-thread  
+      ::`(map blocknumber=@t [hash=@t from=@t to=@t tokenid=@t tokenname=@t tokensymbol=@t gas=@t])
+        !<  (map blocknumber=@t [timestamp=@t hash=@t from=@t to=@t tokenid=@t tokenname=@t tokensymbol=@t gas=@t])  +.p.p.+.sign
+      :_  this(nft-transactions (~(uni by nft-transactions) nft-thread))
+      =,  enjs:format
+      =-  [%give %fact ~[/website] json+!>(`json`-)]~
+        %-  pairs:enjs:format
+        :~  head+s+'update-nfts'
+            tran+(enjsonnft:en-json:is nft-thread)
+      ==
+      ::
+           [%books %do %zap *]
       ?+    +>+.wire  !!
           [%full ~]
         ?>  ?=([%khan %arow *] sign)
@@ -154,6 +267,7 @@
                   q=(list [[@da @ux] transaction])
               ==
           +.p.p.+.sign
+          ~&  [%zapreturnthreadupd upd]
         =.  transactions
           %.  [transactions p.upd]
           uni:((on ,[@da @ux] transaction) gth-hex)
@@ -210,27 +324,81 @@
   ++  on-leave  on-leave:def
   --
 |_  bol=bowl:gall
+++  send-hark
+  |=  [who=ship msg=cord]
+  ::^+  %is
+  ::?.  send-alerts  %is
+  ::?.  .^(? %gu /(scot %p our.bowl)/hark/(scot %da now.bowl)/$)
+  ::  %is
+  :: [ship+who msg]~
+  =/  con=(list content:hark)  [msg]~
+  =/  =id:hark      (end 7 (shas %book-notification eny.bol))
+  ::=/  =rope:hark    [~ ~ q.byk.bowl /(scot %p who)/[dap.bowl]]
+  =/  =rope:hark  [gop=~ can=~ des=%books ted=/~bes/books]
+  =/  =action:hark  [%add-yarn & & id rope now.bol con /[dap.bol] ~]
+  ~&  "actionhark:  {<action>}"
+  =/  =cage         [%hark-action !>(action)]
+  [%pass /hark %agent [our.bol %hark] %poke cage]
 ++  uber                                                 ::  khan helpers
   |%
   ++  note-send
     ^-  card
     :^  %pass  /books/do/note  %arvo
     [%k %fard %books %send-notes %noun !>([bol elucidations])]
-  ++  nix-trans
+  ++  nix-trans::delete arm
     ^-  card
     :^  %pass  /books/do/nix  %arvo
     =-  [%k %fard %books %del-trans %noun !>(-)]
     ^-  [bowl:gall @t @t (set @ux) ((mop ,[p=@da q=@ux] transaction) gth-hex)]
     [bol uid.zapper-token pw.zapper-token ~(key by held-wallets) transactions]
     ::
+  ++  del-trans
+    |=  p=path
+    ^-  card
+    :^  %pass  (weld /books/do/del-trans p)  %arvo
+    [%k %fard %books %del-trans %noun !>([~ ~(key by held-wallets)])]
+    ::
   ++  zapper-fi
     |=  p=path
     ^-  card
     :^  %pass  (weld /books/do/zap p)  %arvo
-    =-  [%k %fard %books %get-trans %noun !>(-)]
+    =-  [%k %fard %books %get-transactions %noun !>(-)]
     ^-  [bowl:gall @t @t (set @ux) ((mop ,[p=@da q=@ux] transaction) gth-hex)]
     [bol uid.zapper-token pw.zapper-token ~(key by held-wallets) transactions]
     ::
+  ++  get-nft
+    |=  p=path
+    ^-  card
+    :^  %pass  (weld /books/do/get-nft p)  %arvo
+    [%k %fard %books %get-nft %noun !>([~ ~(key by held-wallets)])]
+    ::
+  ++  del-nft
+    |=  p=path
+    ^-  card
+    :^  %pass  (weld /books/do/del-nft p)  %arvo
+    [%k %fard %books %del-nft %noun !>([~ ~(key by held-wallets)])]
+    ::
+  ++  get-trans
+    |=  p=path
+    ^-  card
+    :^  %pass  (weld /books/do/get-trans p)  %arvo
+    ::[%k %fard %books %get-trans3 %noun !>(`held-wallets)]
+    [%k %fard %books %get-trans %noun !>([~ ~(key by held-wallets)])]
+    ::
+  ++  get-balance
+    |=  p=path
+    ^-  card
+    :^  %pass  (weld /books/do/get-balance p)  %arvo
+    ::[%k %fard %books %get-balance %noun !>(`held-wallets)]
+    [%k %fard %books %get-balance %noun !>([~ ~(key by held-wallets)])]
+::
+ ++  del-balance
+    |=  p=path
+    ^-  card
+    :^  %pass  (weld /books/do/del-balance p)  %arvo
+    ::[%k %fard %books %get-balance %noun !>(`held-wallets)]
+    [%k %fard %books %del-balance %noun !>([~ ~(key by held-wallets)])] 
+::
   ++  rolo-send
     ^-  json
     =,  enjs:format
@@ -258,8 +426,11 @@
       :+  'mine'  %a
       ^-  (list json)
       %-  ~(rep by held-wallets)
+      ::change remember a cell of 3 things instead of 2.
+      ::held-wallets=(map @ux [nick=@t tags=(set @tas)])::put balance here
       |=  [[a=@ux [n=@t t=(set @tas)]] j=(list json)]
-      :_  j  :-  %a
+      ::|=  a=*
+     :_  j  :-  %a
       :~  s+(scot %ux a)
         ::
           %-  pairs
@@ -278,7 +449,7 @@
     :_  state(zapper-token [u p])
     =-  [%give %fact ~[/website] json+!>(`json`-)]~
     %-  pairs:enjs:format
-    ~[head+s+'just-status' status+s+'Zapper.Fi Credentials Updated']
+    ~[head+s+'just-status' status+s+'Etherium.Fi Credentials Updated']
   ++  eth-key
     |=  [k=@t]
     ^-  (quip card _state)
@@ -316,9 +487,14 @@
     ~|  '%books-fail -address-not-tracked'
     ?>  (~(has by held-wallets) a)
     =.  held-wallets  (~(del by held-wallets) a)
+    =/  c  (crip ['0' 'x' ((x-co:co (met 3 a)) a)])
+    =.  wallet-states  (~(del by wallet-states) c)
     =,  enjs:format
     :_  state
-    =-  ~[nix-trans:uber [%give %fact ~[/website] json+!>(`json`-)]]
+    :-  (del-trans:uber)
+    :::-  (del-balance:uber)
+    :-  (del-nft:uber)
+    =-  [%give %fact ~[/website] json+!>(`json`-)]~
     %-  pairs
     :~  head+s+'del-wallet'
         remove+s+(scot %ux a)
@@ -334,9 +510,12 @@
       (~(put by held-wallets) a [n t])
     =,  enjs:format
     :_  state
-    :-  (zapper-fi:uber /some)
+    :::-  (zapper-fi:uber /some)
+    :-  (get-trans:uber)
+    :-  (get-balance:uber)
+    :-  (get-nft:uber)
     =-  [%give %fact ~[/website] json+!>(`json`-)]~
-    %-  pairs
+    %-  pairs:enjs:format
     :~  head+s+'add-wallet'
       :-  'new'
       :-  %a
@@ -368,7 +547,7 @@
                 %~  tap  in  ^-  (set json)
                 (~(run in tags.w) |=(a=@tas `json`s+(scot %tas a)))
             ==
-        ==
+        ==  
     ==
   ++  del-bud
     |=  [a=@ux]
@@ -519,6 +698,20 @@
           ==
       ==
     ==
+    ::update/refresh all api's
+  ++  up-date
+      ^-  (quip card _state)
+      =,  enjs:format
+      :_  state
+      :::-  (zapper-fi:uber /some)
+      :-  (get-trans:uber)
+      :-  (get-balance:uber)
+      :-  (get-nft:uber)
+      =-  [%give %fact ~[/website] json+!>(`json`-)]~
+      %-  pairs:enjs:format
+      :~  head+s+'books updated on'
+          status+s+`@t`(scot %da now.bol)
+      ==
   --
   ++  en-json
     =,  enjs:format
@@ -535,29 +728,18 @@
       ^-  json
       %-  pairs
       :~  primarywallet+s+(scot %ux primarywallet.t)
-          network+s+network.t
+          ::network+s+network.t
           hash+s+(scot %ux hash.t)
           blocknumber+(numb blocknumber.t)
           name+s+name.t
-          direction+s+direction.t
+          ::direction+s+direction.t
           timestamp+(sect timestamp.t)
-          symbol+s+symbol.t
+          ::symbol+s+symbol.t
           address+?~(address.t ~ s+(scot %ux u.address.t))
           amount+s+(cut 3 [2 (lent (scow %rd amount.t))] (scot %rd amount.t))
           from+s+(scot %ux from.t)
           destination+s+(scot %ux destination.t)
           contract+?~(contract.t ~ s+(scot %ux u.contract.t))
-        ::
-          :-  'subtransactions'
-          :-  %a  %+  turn  ~(tap in subtransactions.t)
-          |=  st=[t=@tas s=@t am=@rd ad=(unit @ux)]
-          %-  pairs
-          :~  type+s+t.st
-              symbol+s+s.st
-              amount+s+(cut 3 [2 (lent (scow %rd am.st))] (scot %rd am.st))
-              address+?~(ad.st ~ s+(scot %ux u.ad.st))
-          ==
-        ::
           nonce+(numb nonce.t)
         ::
           :-  'txgas'
@@ -571,5 +753,50 @@
           fee+s+(cut 3 [2 (lent (scow %rd fee.t))] (scot %rd fee.t))
           txsuccessful+b+txsuccessful.t
       ==
+    ++  enjsonbalance
+   |=  n=(map walletaddress=@t balance=@ud)
+    =/  listn  ~(tap by n)  :: Extract the key-value pairs from the map `n`
+    :-  %a
+    %+  turn
+    listn
+    |=  [walletaddress=@t balance=@ud]
+    %-  pairs:enjs:format
+    :~  walletaddress+s+walletaddress
+        balance+s+(scot %ud balance)
+    ==
+    ++  enjsonnft
+   |=  n=(map blocknumber=@t [timestamp=@t hash=@t from=@t to=@t tokenid=@t tokenname=@t tokensymbol=@t gas=@t])
+    =/  listn  ~(tap by n)  :: Extract the key-value pairs from the map `n`
+    :-  %a
+    %+  turn
+    listn
+    |=  [blocknumber=@t [timestamp=@t hash=@t from=@t to=@t tokenid=@t tokenname=@t tokensymbol=@t gas=@t]]
+    %-  pairs:enjs:format
+    :~  blocknumber+s+blocknumber
+        timestamp+s+timestamp
+        hash+s+hash
+        from+s+from
+        to+s+to
+        tokenid+s+tokenid
+        tokenname+s+tokenname
+        tokensymbol+s+tokensymbol
+        gas+s+gas
+    ==
+     ++  enjsontrans
+   |=  n=(map timestamp=@t [hash=@t from=@t to=@t value=@t gas=@t gasused=@t])
+    =/  listn  ~(tap by n)  :: Extract the key-value pairs from the map `n`
+    :-  %a
+    %+  turn
+    listn
+    |=  [timestamp=@t [hash=@t from=@t to=@t value=@t gas=@t gasused=@t]]
+    %-  pairs:enjs:format
+    :~  timestamp+s+timestamp
+        hash+s+hash
+        from+s+from
+        to+s+to
+        value+s+value
+        gas+s+gas
+        gasused+s+gasused
+    ==
     --
 --
