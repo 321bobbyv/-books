@@ -15,28 +15,9 @@
       [%set-tags address=@ux tags=(set @tas)]
       [%set-patp address=@ux who=(unit @p)]
       [%set-nick address=@ux nick=@t]
-      [%re-fresh ~]
   ==
 ::
-::  state objects
 ::
-+$  network
-  $?  %ethereum
-      %polygon
-      %optimism
-      %gnosis
-      %binance-smart-chain
-      %fantom
-      %avalanche
-      %arbitrum
-      %celo
-      %harmony
-      %moonriver
-      %bitcoin
-      %cronos
-      %aurora
-      %evmos
-    ==
 ::
 +$  direction
   $?  %incoming
@@ -93,9 +74,7 @@
       txsuccessful=?
   ==
   +$  nft-trans
-    $:  blocknumber=@t
-        timestamp=@t
-        hash=@t
+    $:  hash=@t
         from=@t
         to=@t
         tokenid=@t
@@ -103,9 +82,8 @@
         tokensymbol=@t
         gas=@t
   ==
-   +$  eth-trans
-    $:  timestamp=@t
-        hash=@t
+   +$  trans
+    $:  hash=@t
         from=@t
         to=@t
         value=@t

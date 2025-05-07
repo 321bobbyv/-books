@@ -1,6 +1,20 @@
 ::  /sur/books
 ::
+:: +$  state-zero
+::   $:  zapper-token=[uid=@t pw=@t]
+::       etherscankey=@t
+::       tags=(set @tas)
+::     ::
+::       held-wallets=(map @ux [nick=@t tags=(set @tas)])
+::       lilblackbook=(map @ux wallet)
+::     ::
+::       transactions=((mop ,[p=@da q=@ux] transaction) gth-hex)
+::       elucidations=(map @ux annotation)
+::   ==
+::
 |%
+::
+::  page
 ::
 +$  page
   $%  [%change-zapper-creds uid=@t pw=@t]
@@ -15,7 +29,6 @@
       [%set-tags address=@ux tags=(set @tas)]
       [%set-patp address=@ux who=(unit @p)]
       [%set-nick address=@ux nick=@t]
-      [%re-fresh ~]
   ==
 ::
 ::  state objects
@@ -65,11 +78,6 @@
       tags=(set @tas)
   ==
 ::
-+$  wallet-state
-  $:  walletaddress=@ux
-      balance=@ud
-  ==
-::
 +$  transaction
   $:  primarywallet=@ux
       =network
@@ -91,25 +99,5 @@
       input=(unit @t)
       fee=@rd
       txsuccessful=?
-  ==
-  +$  nft-trans
-    $:  blocknumber=@t
-        timestamp=@t
-        hash=@t
-        from=@t
-        to=@t
-        tokenid=@t
-        tokenname=@t
-        tokensymbol=@t
-        gas=@t
-  ==
-   +$  eth-trans
-    $:  timestamp=@t
-        hash=@t
-        from=@t
-        to=@t
-        value=@t
-        gas=@t
-        gasused=@t
   ==
 --
