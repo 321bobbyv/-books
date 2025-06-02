@@ -13,6 +13,7 @@
         "x86_64-linux"
         "aarch64-darwin"
       ];
+      # bugged, fix in prog: https://github.com/Davidyz/VectorCode/issues/73
       perSystem =
         { pkgs, system, ... }:
         {
@@ -20,6 +21,8 @@
             buildInputs = with pkgs; [
               nodejs
               nodePackages.npm
+              vectorcode
+              python312Packages.chromadb
             ];
           };
         };
