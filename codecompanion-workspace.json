@@ -1,0 +1,87 @@
+{
+  "name": "books-workspace",
+  "version": "1.0",
+  "system_prompt": "This workspace contains the code for the 'books' web interface, which interacts with an Urbit ship to manage Ethereum wallets, transactions, and related data.",
+  "groups": [
+    {
+      "name": "state_management",
+      "system_prompt": "This group contains the files for managing the application's state using Vuex.",
+      "data": [
+        "store_index",
+        "store_ship",
+        "store_books"
+      ]
+    },
+    {
+      "name": "api_and_urbit_communication",
+      "system_prompt": "This group contains the files responsible for communicating with the Urbit backend.",
+      "data": [
+        "api_index",
+        "api_urbit",
+        "api_books"
+      ]
+    },
+    {
+      "name": "ui_and_components",
+      "system_prompt": "This group contains the files that make up the user interface.",
+      "data": [
+        "main_js",
+        "home_view",
+        "eth_transaction_list",
+        "quartus_logo"
+      ]
+    }
+  ],
+  "data": {
+    "store_index": {
+      "type": "file",
+      "path": "interface/src/store/index.ts",
+      "description": "The main Vuex store file, which combines the 'ship' and 'books' modules."
+    },
+    "store_ship": {
+      "type": "file",
+      "path": "interface/src/store/ship.ts",
+      "description": "Manages the application's state related to the Urbit ship, including subscriptions and Airlock communication."
+    },
+    "store_books": {
+      "type": "file",
+      "path": "interface/src/store/books.ts",
+      "description": "Handles the state related to the 'books' feature, including transactions, wallets, friends, and notes."
+    },
+    "api_index": {
+        "type": "file",
+        "path": "interface/src/api/index.js",
+        "description": "Main API file that merges urbitAPI and airlock."
+    },
+    "api_urbit": {
+        "type": "file",
+        "path": "interface/src/api/urbitAPI.js",
+        "description": "Handles the Urbit API connection."
+    },
+    "api_books": {
+        "type": "file",
+        "path": "interface/src/api/books.ts",
+        "description": "Contains functions to interact with the 'books' app on the Urbit ship."
+    },
+    "main_js": {
+        "type": "file",
+        "path": "interface/src/main.js",
+        "description": "The main entry point for the Vue application."
+    },
+    "home_view": {
+        "type": "file",
+        "path": "interface/src/views/Home_eth.vue",
+        "description": "The main view for displaying Ethereum transactions and wallet information."
+    },
+    "eth_transaction_list": {
+        "type": "file",
+        "path": "interface/src/components/EthTransactionList.vue",
+        "description": "A component that displays a list of Ethereum transactions."
+    },
+    "quartus_logo": {
+        "type": "file",
+        "path": "interface/src/components/QuartusLogo.vue",
+        "description": "A component that displays the Quartus logo."
+    }
+  }
+}

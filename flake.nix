@@ -2,7 +2,7 @@
   description = "Development environment with Node.js and npm";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
@@ -22,7 +22,7 @@
               nodejs
               nodePackages.npm
               vectorcode
-              python312Packages.chromadb
+              python3Packages.chromadb_0
             ];
           };
         };
