@@ -47,3 +47,19 @@ Del wallet poke
 :books &books-page [%del-wallet 0x63a9.975b.a31b.0b96.26b3.4300.f7f6.2714.7df1.f526]
 
 :books &books-page [%del-wallet 0x628b.f04b.826a.87a9.2482.bfc9.5a40.95bc.249f.62fd]
+
+%set-patp
+
+:books &books-page [%set-patp [0xddbd.2b93.2c76.3ba5.b1b7.ae3b.362e.ac3e.8d40.121a [~ ~zod]]]
+
+%set-tags
+
+Set tags - tag-man 
+ 
+:books &books-page [%set-tags [0x1b (silt (list @tas)`['cat' ~])]] 
+ 
+Set-nick - nic-name 
+ 
+:books &books-page [%set-nick [0x628b.f04b.826a.87a9.2482.bfc9.5a40.95bc.249f.62fd 'nick34']] 
+%set-nick
+
