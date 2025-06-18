@@ -27,6 +27,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("@/components/EthTransactionList.vue"), // Lazy-loaded
   },
   {
+    path: "/settings",
+    name: "settings",
+    component: () => import("@/components/Settings.vue"), // Lazy-loaded
+  },
+  {
     path: "/nfttransactions",
     name: "nfttransactions",
     component: () => import("@/components/NftTransactionList.vue"), // Lazy-loaded

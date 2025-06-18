@@ -32,6 +32,32 @@
         </div>
       </template>
 
+
+      <template #patP="{ text, record }">
+        <div class="editable-cell">
+          <div
+            v-if="editableData[record.key]"
+            class="editable-cell-input-wrapper"
+          >
+            <a-input
+              v-model:value="editableData[record.key].patP"
+              @pressEnter="save(record.key)"
+            />
+            <check-outlined
+              class="editable-cell-icon-check"
+              @click="save(record.key)"
+            />
+          </div>
+          <div v-else class="editable-cell-text-wrapper">
+            {{ text || " " }}
+            <edit-outlined
+              class="editable-cell-icon"
+              @click="edit(record.key)"
+            />
+          </div>
+        </div>
+      </template>
+
       <template #tags="{ record }">
         <WalletTagEdit :record="record" />
       </template>
@@ -128,7 +154,7 @@ import Immutable from "immutable";
 import WalletTagEdit from "@/components/WalletTagEdit.vue";
 import { computed, defineComponent, reactive, ref, toRaw } from "vue";
 import { mapState, useStore } from "vuex";
-import { pushFriend, pullFriend, pushName } from "@/api/books";
+import { pushFriend, pullFriend, pushName, pushPatp } from "@/api/books";
 import { CheckOutlined, EditOutlined } from "@ant-design/icons-vue";
 import { cloneDeep } from "lodash-es";
 import { Form } from "ant-design-vue";
@@ -151,7 +177,7 @@ export default defineComponent({
           name: item[1].nick,
           address: item[0],
           tags: item[1].tags,
-          patP: [!item[1].who ? "" : item[1].who],
+          patP: !item[1].who ? "" : item[1].who,
         };
       });
     });
@@ -183,6 +209,9 @@ export default defineComponent({
         title: "Urbit ID (@p)",
         dataIndex: "patP",
         width: "15%",
+        slots: {
+          customRender: "patP",
+        },
       },
       {
         title: "Tags",
@@ -252,17 +281,33 @@ export default defineComponent({
 
     const save = (key) => {
       console.log("on-save");
+      const oldRow = friends.value.filter((item) => key === item.key)[0];
+      const newRow = editableData[key];
+
+      if (oldRow && newRow) {
+        if (newRow.name != oldRow.name) {
+          pushName(key, editableData[key].name)
+            .then((r) => {
+              console.log("res: ", r);
+            })
+            .catch((e) => {
+              console.log("err: ", e);
+            });
+        }
+      }
+      if (newRow.patP != oldRow.patP) {
+        pushPatp(key, editableData[key].patP)
+          .then((r) => {
+            console.log("res: ", r);
+          })
+          .catch((e) => {
+            console.log("err: ", e);
+          });
+      }
       Object.assign(
-        friends.value.filter((item) => key === item.key)[0],
+        oldRow,
         editableData[key]
       );
-      pushName(key, editableData[key].name)
-        .then((r) => {
-          console.log("res: ", r);
-        })
-        .catch((e) => {
-          console.log("err: ", e);
-        });
       delete editableData[key];
     };
 

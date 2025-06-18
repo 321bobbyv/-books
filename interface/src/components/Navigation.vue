@@ -88,6 +88,28 @@
         </div>
       </router-link>
     </li>
+    <li class="mr-3 flex-1">
+      <router-link
+        :to="{ name: 'settings' }"
+        class="text-black hover:no-underline"
+      >
+        <div
+          class="my-6 flex items-center rounded-lg p-2 transition ease-in-out hover:scale-110 hover:text-yellow-400"
+          v-bind:class="[nav === 1 ? 'bg-gray-600 dark:bg-gray-800' : '']"
+        >
+          <setting-outlined
+            :style="nav === 1 ? { color: '#EAB308' } : { color: '#171717' }"
+          />
+          <span
+            class="mx-4 text-lg font-normal"
+            v-bind:class="[nav === 1 ? 'text-yellow-500' : '']"
+          >
+            Settings
+          </span>
+          <span class="flex-grow text-right"> </span>
+        </div>
+      </router-link>
+    </li>
     <li>
       <div class="md:hidden">
         <div
@@ -116,7 +138,7 @@ import QuartusLogo from "@/components/QuartusLogo.vue";
 import {
   BookOutlined,
   BankOutlined,
-  WalletOutlined,
+  SettingOutlined,
   ContactsOutlined,
 } from "@ant-design/icons-vue";
 
@@ -124,7 +146,7 @@ export default defineComponent({
   components: {
     BookOutlined,
     BankOutlined,
-    WalletOutlined,
+    SettingOutlined,
     ContactsOutlined,
     QuartusLogo,
   },

@@ -68,3 +68,16 @@ export default defineComponent({
     );
     //  mounted-actions
     store.dispatch("books/handleSwitchNav", 2);
+    
+    // Return all reactive properties for template use
+    return {
+      orderedTransactions,
+      myWallets,
+      myFriends,
+      notes,
+      urbitnfttransData,
+      awaitingUrbitData
+    };
+  }
+});
+</script>

@@ -1,6 +1,6 @@
 import urbitAPI from "./urbitAPI";
 import { Scry } from "@urbit/http-api";
-import { Transaction, Address, TxHash } from "@/types";
+import { Address, Transaction, TxHash } from "@/types";
 import Decimal from "decimal.js";
 //urbitAPI: This is the API module to interact with Urbit, used to send pokes.
 //Scry: A specific method from the Urbit HTTP API, though it’s not used in this file.
@@ -18,7 +18,7 @@ export function arrayAndHepTags(tags: string): Array<string> {
 //Purpose: Normalizes and processes tags before sending them to the Urbit backend.
 export function concatOldTagsNewTagString(
   oldTags: Array<string>,
-  newTagString: string
+  newTagString: string,
 ): Array<string> {
   return oldTags.slice().concat(arrayAndHepTags(newTagString));
 }
@@ -27,7 +27,7 @@ export function concatOldTagsNewTagString(
 export function pushWallet(
   address: Address,
   nick: string,
-  tags: Array<string>
+  tags: Array<string>,
 ) {
   return urbitAPI.poke({
     //   return {
@@ -64,7 +64,7 @@ export function pushFriend(
   address: Address,
   nick: string,
   who: string,
-  tags: Array<string>
+  tags: Array<string>,
 ) {
   return urbitAPI.poke({
     app: "books",
@@ -111,6 +111,14 @@ export function pushName(address: Address, name: string) {
     json: { "set-nick": { address: address, nick: name } },
   });
 }
+//Purpose: Sets or updates the nickname for a wallet or friend identified by the given address.
+export function pushPatp(address: Address, name: string | null) {
+  return urbitAPI.poke({
+    app: "books",
+    mark: "books-page",
+    json: { "set-patp": { address: address, patp: name } },
+  });
+}
 //Purpose: Adds an annotation to a transaction, identified by its hash, with metadata like basis (Decimal), recipient address (to), the annotation message, and associated tags.
 export function pushAnnotation(
   hash: TxHash,
@@ -119,7 +127,7 @@ export function pushAnnotation(
     to: Address | null;
     annotation: string;
     tags: Array<string>;
-  }
+  },
 ) {
   return urbitAPI.poke({
     app: "books",
@@ -127,6 +135,28 @@ export function pushAnnotation(
     json: { annotation: { hash: hash, note: note } },
   });
 }
+
+export function pushEtherscanKey(key: string) {
+  return urbitAPI.poke({
+    app: "books",
+    mark: "books-page",
+    json: { "etherscan-key": { key: key } },
+  });
+}
+
+export function pushZapperCreds(uid: string, pass: string) {
+  return urbitAPI.poke({
+    app: "books",
+    mark: "books-page",
+    json: {
+      "change-zapper-creds": {
+        uid: uid,
+        pw: pass,
+      },
+    },
+  });
+}
+
 //Purpose: Adds a transaction to the Urbit books app. The Transaction object is reformatted, and decimal numbers are converted to strings before sending it to Urbit.
 export function pushTransaction(trans: Transaction) {
   const reformTrans = {
